@@ -3,6 +3,9 @@ import { $notes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
+// Explicitly set to node runtime to avoid edge runtime issues
+export const runtime = 'nodejs';
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();

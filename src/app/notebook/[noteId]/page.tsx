@@ -1,14 +1,9 @@
-import DeleteButton from "@/components/DeleteButton";
-import TipTapEditor from "@/components/TipTapEditor";
-import { Button } from "@/components/ui/button";
-import { clerk } from "@/lib/clerk-server";
 import { db } from "@/lib/db";
 import { $notes } from "@/lib/db/schema";
-import { auth } from "@clerk/nextjs";
-import { and, eq } from "drizzle-orm";
-import Link from "next/link";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import React from "react";
+import NotebookClient from "@/components/NotebookClient";
 
 type Props = {
   params: {
@@ -17,48 +12,42 @@ type Props = {
 };
 
 const NotebookPage = async ({ params: { noteId } }: Props) => {
-  const { userId } = await auth();
-  if (!userId) {
-    return redirect("/dashboard");
-  }
-  const user = await clerk.users.getUser(userId);
-  const notes = await db
-    .select()
-    .from($notes)
-    .where(and(eq($notes.id, parseInt(noteId)), eq($notes.userId, userId)));
+  try {
+    // Validate noteId
+    const noteIdNum = parseInt(noteId);
+    if (isNaN(noteIdNum)) {
+      console.error("Invalid note ID:", noteId);
+      return redirect("/dashboard");
+    }
 
-  if (notes.length != 1) {
-    return redirect("/dashboard");
-  }
-  const note = notes[0];
+    // Fetch the note with the given ID
+    const notes = await db
+      .select()
+      .from($notes)
+      .where(eq($notes.id, noteIdNum));
 
-  return (
-    <div className="min-h-screen grainy p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="border shadow-xl border-stone-200 rounded-lg p-4 flex items-center">
-          <Link href="/dashboard">
-            <Button className="bg-green-600" size="sm">
-              Back
-            </Button>
-          </Link>
-          <div className="w-3"></div>
-          <span className="font-semibold">
-            {user.firstName} {user.lastName}
-          </span>
-          <span className="inline-block mx-1">/</span>
-          <span className="text-stone-500 font-semibold">{note.name}</span>
-          <div className="ml-auto">
-            <DeleteButton noteId={note.id} />
-          </div>
-        </div>
+    if (notes.length !== 1) {
+      console.log("Note not found, redirecting to dashboard");
+      return redirect("/dashboard");
+    }
 
-        <div className="h-4"></div>
-        <div className="border-stone-200 shadow-xl border rounded-lg px-16 py-8 w-full">
-          <TipTapEditor note={note} />
+    const note = notes[0];
+    return <NotebookClient note={note} noteId={noteId} />;
+  } catch (error) {
+    console.error("Error loading notebook:", error);
+    // Return a simple error UI instead of redirecting
+    return (
+      <div className="min-h-screen grainy p-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Notebook</h1>
+          <p className="mb-4">There was a problem loading this notebook.</p>
+          <a href="/dashboard" className="text-blue-500 underline">
+            Return to Dashboard
+          </a>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 };
 
 export default NotebookPage;

@@ -14,11 +14,14 @@ import axios from "axios";
 import { Button } from "./ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
 
 type Props = {};
 
 const CreateNoteDialog = (props: Props) => {
   const router = useRouter();
+  const { user } = useAuth();
   const [input, setInput] = React.useState("");
   const uploadToFirebase = useMutation({
     mutationFn: async (noteId: string) => {
@@ -32,6 +35,7 @@ const CreateNoteDialog = (props: Props) => {
     mutationFn: async () => {
       const response = await axios.post("/api/createNoteBook", {
         name: input,
+        userId: user?.id || "default-user", // Use the current user's ID if available
       });
       return response.data;
     },
@@ -40,7 +44,7 @@ const CreateNoteDialog = (props: Props) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (input === "") {
-      window.alert("Please enter a name for your notebook");
+      toast.error("Please enter a name for your notebook");
       return;
     }
     createNotebook.mutate(undefined, {
@@ -48,11 +52,12 @@ const CreateNoteDialog = (props: Props) => {
         console.log("created new note:", { note_id });
         // hit another endpoint to uplod the temp dalle url to permanent firebase url
         uploadToFirebase.mutate(note_id);
+        toast.success("Notebook created successfully");
         router.push(`/notebook/${note_id}`);
       },
       onError: (error) => {
         console.error(error);
-        window.alert("Failed to create new notebook");
+        toast.error("Failed to create new notebook");
       },
     });
   };
@@ -60,9 +65,9 @@ const CreateNoteDialog = (props: Props) => {
   return (
     <Dialog>
       <DialogTrigger>
-        <div className="border-dashed border-2 flex border-green-600 h-full rounded-lg items-center justify-center sm:flex-col hover:shadow-xl transition hover:-translate-y-1 flex-row p-4">
-          <Plus className="w-6 h-6 text-green-600" strokeWidth={3} />
-          <h2 className="font-semibold text-green-600 sm:mt-2">
+        <div className="border-dashed border-2 flex border-[#47423e] h-full rounded-lg items-center justify-center sm:flex-col hover:shadow-xl transition hover:-translate-y-1 flex-row p-4">
+          <Plus className="w-6 h-6 text-[#47423e]" strokeWidth={3} />
+          <h2 className="font-semibold text-[#47423e] sm:mt-2">
             New Note Book
           </h2>
         </div>
@@ -87,7 +92,7 @@ const CreateNoteDialog = (props: Props) => {
             </Button>
             <Button
               type="submit"
-              className="bg-green-600"
+              className="bg-[#47423e] hover:bg-[#e2dac4] hover:text-[#47423e] text-[#e2dac4] transition-colors duration-300"
               disabled={createNotebook.isLoading}
             >
               {createNotebook.isLoading && (

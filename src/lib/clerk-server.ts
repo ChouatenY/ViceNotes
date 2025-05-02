@@ -1,5 +1,9 @@
-import { Clerk } from "@clerk/backend";
-
-export const clerk = Clerk({
-  apiKey: process.env.CLERK_SECRET_KEY,
-});
+// Mock Clerk implementation since we've removed authentication
+export const clerk = {
+  users: {
+    getUser: async () => ({
+      firstName: "Default",
+      lastName: "User",
+    }),
+  },
+};
